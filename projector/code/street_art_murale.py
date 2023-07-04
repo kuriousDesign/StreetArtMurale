@@ -59,6 +59,12 @@ class Game:
         self.alien_setup(rows=alien_rows, cols=alien_cols)
         self.alien_direction = 1
 
+        # Bird setup
+        bird = pygame.sprite.Group()
+        bird_sprite = Bird('magenta', x, y)
+        self.bird.add(bird_sprite)
+        self.bird_direction = 1
+
         # Asteroids setup
         self.asteroids = pygame.sprite.Group()
 
@@ -75,7 +81,7 @@ class Game:
         self.explosion_sound = pygame.mixer.Sound(explosion_wave_path)
         self.explosion_sound.set_volume(0.3)
 
-        # CRT
+        # CRT - TELEVISION
         self.crt = CRT()
 
     def display_end_msg(self):
@@ -115,6 +121,16 @@ class Game:
                     alien_sprite = Alien('red', x, y)
                 self.aliens.add(alien_sprite)
 
+    def bird_position_checker(self):
+        all = self.bird.sprites()
+        for item in all:
+            if item.rect.right >= screen_width:
+                self.bird_direction = -1
+                self.alien_move_down(2)
+            elif item.rect.left <= 0:
+                self.alien_direction = 1
+                self.alien_move_down(2)
+
     def alien_position_checker(self):
         all_aliens = self.aliens.sprites()
         for alien in all_aliens:
@@ -129,6 +145,9 @@ class Game:
         if self.aliens:
             for alien in self.aliens.sprites():
                 alien.rect.y += distance
+
+    def bird_move_right(self, distance):
+        self.bird.rect.y += distance
 
     def alien_shoot(self):
         if self.aliens.sprites():
@@ -218,27 +237,28 @@ class Game:
             self.quit_req = True
 
     def run(self):
+        """update and draw"""
         self.player.update()
-        self.alien_lasers.update()
-        self.asteroids.update()
-        self.extra.update()
+        # self.alien_lasers.update()
+        # self.asteroids.update()
+        # self.extra.update()
 
         self.aliens.update(self.alien_direction)
         self.alien_position_checker()
-        self.extra_alien_timer()
-        self.collision_checks()
+        # self.extra_alien_timer()
+        # self.collision_checks()
 
         self.player.sprite.lasers.draw(screen)
         self.player.draw(screen)
         self.blocks.draw(screen)
         self.aliens.draw(screen)
-        self.alien_lasers.draw(screen)
-        self.asteroids.draw(screen)
-        self.extra.draw(screen)
+        # self.alien_lasers.draw(screen)
+        # self.asteroids.draw(screen)
+        # self.extra.draw(screen)
         self.display_lives()
         self.display_score()
-        self.check_for_remaining_aliens()
-        self.crt.draw()
+        # self.check_for_remaining_aliens()
+        # self.crt.draw()
 
 
 class StreetArtMurale():
