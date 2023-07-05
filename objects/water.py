@@ -1,5 +1,5 @@
 import pygame
-from spritesheet import *
+from helpers.spritesheet import *
 from typing import List
 from clipplayer import *
 

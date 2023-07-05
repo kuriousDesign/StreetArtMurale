@@ -9,17 +9,74 @@ import os
 from colorize import *
 import itertools
 from colorfade import *
+from helpers.imagehelper import *
 
-mixer.init()
-pygame.init()
+from poseestimation import *
+
+
+# game = Game()
+pose_estimation = PoseEstimation()
+
 
 # create game window
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("StreetArtMurale")
 
 
-class ProjectorGame:
+# function for drawing text
+def draw_text(text, font, text_col, x, y):
+    img = font.render(text, True, text_col)
+    screen.blit(img, (x, y))
+
+
+def create_bg_image():
+    """loads many images from background direction and smashes into one pygame image"""
+    merged = None
+
+    # assign directory
+    directory = "assets/images/background/"
+    # iterate over files in
+    # this directory
+    # create list of images to be merged
+    img_list = create_img_list_from_dir(directory)
+    merge_img = merge_img_list(img_list)
+
+    # assign directory
+    directory = "assets/images/background/outlines/"
+    # iterate over files in
+    # the outlines directory
+    img_list = create_img_list_from_dir(directory)
+    outline_merged = merge_img_list(img_list)
+
+    # colorize the outline merged image to be some new color
+    new_color = (0, 0, 0)
+    outline_merged = Colorize.change_color(outline_merged, new_color)
+
+    # merge outline into merged
+    merge_img.blit(outline_merged, (0, 0))
+    img = pygame.transform.scale(merge_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    return img.convert_alpha()
+
+
+# function for drawing background
+def draw_bg(img):
+    # scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT)) #removed because it was taking a long time to redraw
+    screen.fill((100, 100, 100))
+    screen.blit(img, (0, 0))
+
+    # water_bg.update()
+    # ladyhair_bg.update()
+
+    # game setup - execute once at beginning
+
+
+def run():
+    # setup
+    pygame.init()
+    mixer.init()
+
     # set framerate
     clock = pygame.time.Clock()
     FPS = 60
@@ -35,120 +92,9 @@ class ProjectorGame:
     YELLOW = (255, 255, 0)
     WHITE = (255, 255, 255)
 
-    def __init__(self):
-        # load music
-        pygame.mixer.music.load("assets/audio/music.mp3")
-        pygame.mixer.music.set_volume(0.005)
-        pygame.mixer.music.play(-1, 0.0, 5000)
-        sword_fx = pygame.mixer.Sound("assets/audio/sword.wav")
-        sword_fx.set_volume(0.5)
-        magic_fx = pygame.mixer.Sound("assets/audio/magic.wav")
-        magic_fx.set_volume(0.05)
-
-        # replace color in image
-        def color_replace(image, search_color, replace_color):
-            pygame.transform.threshold(
-                image, image, search_color, (0, 0, 0, 0), replace_color, 1, None, True
-            )
-            return image
-
-    # this is commented out, please import colorize
-    """
-        # function for colorizing images
-        def colorize(image, newColor):
-            ""
-            Create a "colorized" copy of a surface (replaces RGB values with the given color, preserving the per-pixel alphas of
-            original).
-            :param image: Surface to create a colorized copy of
-            :param newColor: RGB color to use (original alpha values are preserved)
-            :return: New colorized Surface instance
-            ""
-            # image = self.image.copy()
-
-            # zero out RGB values
-            image.fill((0, 0, 0, 255), None, pygame.BLEND_RGBA_MULT)
-            # add in new RGB values
-            image.fill(newColor[0:3] + (0,), None, pygame.BLEND_RGBA_ADD)
-
-            return image
-        """
-
-    # load background images
-
-    def create_img_list_from_dir(directory):
-        img_list = []
-        for filename in os.listdir(directory):
-            f = os.path.join(directory, filename)
-            # checking if it is a file
-            if os.path.isfile(f):
-                # print(f)
-                img_list.append(pygame.image.load(f))
-
-        return img_list
-
-    def merge_img_list(img_list):
-        """merge images in list to single flat image"""
-        # merge images
-        merge_img = None
-        for img in img_list:
-            if merge_img == None:
-                merge_img = img
-            else:
-                merge_img.blit(img, (0, 0))
-
-        return merge_img
-
-    def load_bg_images():
-        merged = None
-
-        # assign directory
-        directory = "assets/images/background/"
-        # iterate over files in
-        # this directory
-        # create list of images to be merged
-        img_list = create_img_list_from_dir(directory)
-        merge_img = merge_img_list(img_list)
-
-        # assign directory
-        directory = "assets/images/background/outlines/"
-        # iterate over files in
-        # the outlines directory
-        img_list = create_img_list_from_dir(directory)
-        outline_merged = merge_img_list(img_list)
-
-        # colorize the outline merged image to be some new color
-        new_color = (0, 0, 0)
-        outline_merged = Colorize.change_color(outline_merged, new_color)
-
-        # merge outline into merged
-        merge_img.blit(outline_merged, (0, 0))
-        img = pygame.transform.scale(merge_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
-        return img.convert_alpha()
-
-    # function for drawing background
-    def draw_bg():
-        # scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT)) #removed because it was taking a long time to redraw
-        screen.fill((100, 100, 100))
-        screen.blit(bg_image, (0, 0))
-
     # define font
     count_font = pygame.font.Font("assets/fonts/turok.ttf", 80)
     score_font = pygame.font.Font("assets/fonts/turok.ttf", 30)
-
-    # function for drawing text
-
-    def draw_text(text, font, text_col, x, y):
-        img = font.render(text, True, text_col)
-        screen.blit(img, (x, y))
-
-    # function for drawing fighter health bars
-
-    def draw_health_bar(health, x, y):
-        ratio = health / 100
-        pygame.draw.rect(screen, WHITE, (x - 2, y - 2, 404, 34))
-        pygame.draw.rect(screen, RED, (x, y, 400, 30))
-        pygame.draw.rect(screen, YELLOW, (x, y, 400 * ratio, 30))
-
     # create instance of objects
     bird = Bird()
     water = Water()
@@ -173,13 +119,17 @@ class ProjectorGame:
     colors = itertools.cycle(["blue", "red", "pink", "orange"])
     ladyhair_bg = ColorFade(img, colors, FPS, 1000)
 
-    # water_bg.update()
-    # ladyhair_bg.update()
+    # load music
+    pygame.mixer.music.load("assets/audio/music.mp3")
+    pygame.mixer.music.set_volume(0.005)
+    pygame.mixer.music.play(-1, 0.0, 5000)
+    sword_fx = pygame.mixer.Sound("assets/audio/sword.wav")
+    sword_fx.set_volume(0.5)
+    magic_fx = pygame.mixer.Sound("assets/audio/magic.wav")
+    magic_fx.set_volume(0.05)
 
-    # game setup - execute once at beginning
-    bg_image = load_bg_images()
-    pygame.display.set_caption("StreetArtMurale")
-
+    # create background image
+    bg_image = create_bg_image()
     # game loop
     run = True
     first_scan = True
@@ -192,7 +142,8 @@ class ProjectorGame:
 
             last_draw_time = current_time
             actual_fps = clock.get_fps()
-            if actual_fps < 0.8 * FPS:
+            if actual_fps < 0.8 * FPS and actual_fps != 0.0:
+                print("framerate slow warning: actual_fps = ")
                 print(clock.get_fps())
 
             # update objects
@@ -205,7 +156,7 @@ class ProjectorGame:
             # ladyhair_bg.update()  # TODO: this is very time intensive calc, need to find a way to reduce
 
             # draw background
-            draw_bg()
+            draw_bg(bg_image)
             draw_text("gon world", score_font, (255, 255, 0), 50, 900)
 
             # draw background colorfade objects
@@ -219,6 +170,12 @@ class ProjectorGame:
 
             # update display - call last
             pygame.display.update()
+
+            if first_scan:
+                pose_estimation.run()  # 15fps
+                pose_estimation.process()  # 17fps
+
+            pose_estimation.analyze()  # fast
 
         # responsive event handler
         if current_time - last_event_check_time >= event_check_cooldown or first_scan:
@@ -258,7 +215,9 @@ class ProjectorGame:
                     if event.key == pygame.K_g:
                         bird.move("absolute", 0, 0)
                         bird.clip_player.start_clip(
-                            BirdClipNames.GOING_HOME, loop=False, play_in_reverse=False
+                            BirdClipNames.GOING_HOME,
+                            loop=False,
+                            play_in_reverse=False,
                         )
 
                     elif event.key == pygame.K_h:
@@ -332,8 +291,16 @@ class ProjectorGame:
 
     # exit pygame
     pygame.quit()
+    pose_estimation.kill()
+
+
+# replace color in image
+def color_replace(image, search_color, replace_color):
+    pygame.transform.threshold(
+        image, image, search_color, (0, 0, 0, 0), replace_color, 1, None, True
+    )
+    return image
 
 
 if __name__ == "__main__":
-    projection_game = ProjectionGame()
-    projection_game.run()
+    run()

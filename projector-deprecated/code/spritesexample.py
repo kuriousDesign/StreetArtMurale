@@ -1,6 +1,6 @@
 from colorize import *
 import pygame
-from spritesheet import SpriteSheet
+from helpers.spritesheet import SpriteSheet
 import sys
 import os
 
